@@ -1,0 +1,310 @@
+using System.Collections;
+using System.Data.Common;
+using UnityEngine;
+
+public class MovimentarPlayer : MonoBehaviour
+{
+    public LimitePlayer limiteDireita;
+    public LimitePlayer limiteEsquerda;
+    public LimitePlayer limiteCabeca;
+    public LimitePlayer limitePe;    
+
+    public float velocidade; //Velocidade de movimentação
+    public float forcaPuloY; //Força do pulo no eixo Y
+    private float forcaPuloX; //Força do pulo no eixo X
+    private bool estaPulando; //Diz se o player está em modo de pulo
+    private bool puloDuplo; //Perminte o personagem efetuar um pulo duplo
+    private bool pularDaParede; //Permite pular da parede
+    private bool habilitaPulo; //Habilita o pulo
+    private Coroutine coroutinePulo; //Contador de tempo para poder limitar o pulo do player 
+
+    private PlayerControlador playerControlador; //Códigos do controlador do player
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        //Referencia do PlayerControlador
+        playerControlador = GetComponent<PlayerControlador>();
+
+        //Habilitar o pulo da parede ao iniciar game
+        pularDaParede = true;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //Verificar se o jogo acabou
+        if (CanvasGameMng.Instance.FimDeJogo == true) return;
+
+        Movimentar();
+        Pular();
+        PularDaParede();
+    }
+
+    /// <summary>
+    /// Lógica de movimentação do personagem
+    /// </summary>
+    private void Movimentar()
+    {
+        //Pegar a entrada do usuário para fazer a movimentação
+        float eixoX = Input.GetAxis("Horizontal");
+
+        //Verificar se chegou nos limites da esquerda e direita
+        if (eixoX > 0 && limiteDireita.estaNoLimite == true) { eixoX = 0; }
+        else if (eixoX < 0 && limiteEsquerda.estaNoLimite == true) { eixoX = 0; }
+
+
+        //Olhar para o lado onde o jogador está movendo
+        if (eixoX > 0) {
+            playerControlador.FlipCorpo.OlharDireita();
+        }
+        else if (eixoX < 0)
+        {
+            playerControlador.FlipCorpo.OlharEsquerda();
+        }
+
+        //Verificar se está no chão para poder ativar as animações de movimento
+        if(limitePe.estaNoLimite == true)
+        {
+            //Verificar se o player está movendo
+            if(eixoX != 0)
+            {
+                //Ativa animação de corrida
+                playerControlador.AnimacaoPlayer.PlayCorrendo();
+            }
+            else
+            {
+                //Ativa animação de parado
+                playerControlador.AnimacaoPlayer.PlayParado();
+            }
+        }
+        else
+        {
+            //Ativa animação de queda
+            playerControlador.AnimacaoPlayer.PlayCaindo();
+        }
+
+        //Direção da movimentação
+        Vector3 direcaoMovimento = new Vector3(eixoX,0,0);
+
+        //Movimentar o personagem no sentido da direção
+        transform.position += direcaoMovimento * velocidade * Time.deltaTime;
+    }
+
+    private void Pular()
+    {
+        //Obter a entrada do usuário para poder efetuar o pulo
+        if (Input.GetButtonDown("Jump"))
+        {
+            //Verificar se o pulo está habilitado
+            if (habilitaPulo == true)
+            {
+                //Ativa animação de pulo
+                playerControlador.AnimacaoPlayer.PlayPulando();
+
+                //Ativar audio de pulo
+                AudioMng.Instance.PlayAudioPular();
+
+                //Desabilita o pulo
+                habilitaPulo = false;
+
+                //Habilitar o está pulando
+                estaPulando = true;
+
+                //Habilitar o pulo duplo
+                puloDuplo = true;
+
+                //Ativar o tempo do pulo
+                AtivarTempoPulo();
+            }
+            else
+            {
+                //Verificar se pode fazer o pulo duplo
+                if(puloDuplo == true)
+                {
+                    //Ativa a animação de pulo duplo
+                    playerControlador.AnimacaoPlayer.PlayPuloDuplo();
+
+                    //Ativar audio de pulo
+                    AudioMng.Instance.PlayAudioPular();
+
+                    //Habilito novamente o pulo
+                    estaPulando = true;
+
+                    //Desabilito pulo duplo
+                    puloDuplo = false;
+
+                    //Ativo um novo tempo de pulo
+                    AtivarTempoPulo();
+                }
+            }
+        }
+
+        EfetuarPulo();
+    }
+
+    /// <summary>
+    /// Método para poder fazer o jogador simular o pulo
+    /// </summary>
+    private void EfetuarPulo()
+    {
+        //Verificar se o player pode subir
+        if (estaPulando == true)
+        {
+            if(limiteCabeca.estaNoLimite == false)
+            {
+                //Zerar as forças do rigibody
+                ResetarFisicaDeMovimentacao();
+
+                //Alterar as propriedades do rigidbody para fazer o player subir
+                playerControlador.Rigidbody2D.gravityScale = 0;
+
+                //Direcionar o pulo do player
+                Vector3 direcaoPulo = new Vector3(forcaPuloX, forcaPuloY, 0);
+
+                //Mover o player para cima, simbolizando o pulo
+                transform.position += direcaoPulo * velocidade * Time.deltaTime;
+            }            
+        }
+        else
+        {
+            //Fazer o player voltar a cair
+            playerControlador.Rigidbody2D.gravityScale = 4;
+        }
+    }
+
+    private void AtivarTempoPulo()
+    {
+        //Verificar se já existe um tempo a ser contado
+        if(coroutinePulo != null)
+        {
+            StopCoroutine(coroutinePulo);
+        }
+
+        //Iniciar um novo contador de tempo
+        coroutinePulo = StartCoroutine(TempoPulo());
+    }
+
+    private IEnumerator TempoPulo()
+    {
+        //Permite 0.3 segundo o player subindo
+        yield return new WaitForSeconds(0.3f);
+
+        //Desabilita a variavel que permite o player subir
+        estaPulando = false;
+
+        //Zerar Força do pulo no eixo X
+        forcaPuloX = 0;
+    }
+
+    private void PularDaParede()
+    {
+        //Verifica se está no chão para poder habilitar novamente o pulo da parede
+        if(limitePe.estaNoLimite == true)
+        {
+            pularDaParede = true;
+        }
+
+        //Só pula da parede se for permitido
+        if(pularDaParede == false) { return; }
+
+        //Verificar se o player não está no chão e a cabeça
+        //não esta no limite e se está em algumas das extremidades
+        if (limitePe.estaNoLimite == false && limiteCabeca.estaNoLimite == false && 
+            (limiteEsquerda.estaNoLimite == true || limiteDireita.estaNoLimite == true))
+        {
+            //Ativar a animação de Deslizar da Parede
+            playerControlador.AnimacaoPlayer.PlayDeslizarParede();
+
+            //Fazer o player olhar para o lado oposto a qual ele está deslizando pela parede
+            if (limiteEsquerda.estaNoLimite == true) playerControlador.FlipCorpo.OlharEsquerda();
+            else playerControlador.FlipCorpo.OlharDireita();
+
+            //Obter a entrada do usuário para poder efetuar o pulo pela parede
+            if (Input.GetButtonDown("Jump"))
+            {
+                //Aplicar uma força em X na direção contraria a parede que ele está encostado
+                if (limiteDireita.estaNoLimite == true) {
+                    forcaPuloX = forcaPuloY * -1;
+                }
+                else if(limiteEsquerda.estaNoLimite == true){
+                    forcaPuloX = forcaPuloY;
+                }
+                else
+                {
+                    forcaPuloX = 0;
+                }
+
+                //Ativa animação de pulo
+                playerControlador.AnimacaoPlayer.PlayPulando();
+
+                //Ativar audio de pulo
+                AudioMng.Instance.PlayAudioPular();
+
+                //Habilitar o pulo duplo
+                puloDuplo = true;
+
+                //Habilitar o pulo continuo
+                estaPulando = true;
+
+                //Desabilita pulo da parede
+                pularDaParede = false;
+
+                //Ativar um novo tempo de pulo
+                AtivarTempoPulo();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Resetar as forças do rigidbody2d do player
+    /// </summary>
+    public void ResetarFisicaDeMovimentacao()
+    {
+        playerControlador.Rigidbody2D.linearVelocity = Vector3.zero;
+    }
+
+    /// <summary>
+    /// Arremessar o player para uma direção aleatória
+    /// </summary>
+    public void ArremessarPlayer()
+    {
+        //Sortear um numero entre 0 e 1 para poder definir qual a direção a ser arremessado
+        int valorSorteado = new System.Random().Next(0, 2);
+
+        //Definir a direção em X a ser arremessado
+        int direcaoX = valorSorteado == 0 ? -1000 : 1000;
+
+        //Aplicar a força no player
+        playerControlador.Rigidbody2D.AddForce(new Vector2(direcaoX, 1000));
+    }
+
+    /// <summary>
+    /// Método para remover a gravidade
+    /// </summary>
+    public void RemoverGravidade()
+    {
+        //Remover a gravidade do player
+        playerControlador.Rigidbody2D.bodyType = RigidbodyType2D.Static;
+    }
+
+    /// <summary>
+    /// Método para tirar as funções do player
+    /// </summary>
+    public void CongelarPlayer()
+    {
+        //Desabilitar as fisicas
+        ResetarFisicaDeMovimentacao();
+
+        //Remover a gravidade
+        RemoverGravidade();
+
+        //Ativar animação de parado
+        playerControlador.AnimacaoPlayer.PlayParado();
+    }
+
+    public void HabilitaPulo()
+    {
+        habilitaPulo = true;
+    }
+}
