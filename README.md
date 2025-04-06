@@ -10,8 +10,9 @@
 
 - [🎯 Sobre o Projeto](#🎯-sobre-o-projeto)
 - [🚀 Tecnologias Utilizadas](#🚀-tecnologias-utilizadas)
-- [⚙️ Funcionalidades](#⚙️-funcionalidades)
-- [🧪 Como Usar](#🧪-como-usar)
+- [🕹️ Funcionalidades](#🕹️-funcionalidades)
+- [💻 Como Usar](#💻-como-usar)
+- [🎮 Como jogar](#🎮-para-jogar)
 - [📬 Contato](#📬-contato)
 
 ---
@@ -24,6 +25,10 @@ O jogo é ambientado num mundo 2D onde o jogador deve enfrentar desafios, derrot
 
 Colete itens no tempo determinado, e vença o chefe final.
 
+🎬 Clique na imagem abaixo para conferir o gameplay completo:
+
+[![Virtual Guy Adventure - Full Gameplay](https://img.youtube.com/vi/ylD7xd9kJCU/hqdefault.jpg)](https://www.youtube.com/watch?v=ylD7xd9kJCU)
+
 ---
 
 ## 🚀 Tecnologias Utilizadas
@@ -32,7 +37,7 @@ Colete itens no tempo determinado, e vença o chefe final.
 
 ---
 
-## ⚙️ Funcionalidades
+## 🕹️ Funcionalidades
 
 - ✅ As teclas AD movem o personagem.
 - ✅ A tecla Espaço faz o personagem pular e dar um segundo pulo.
@@ -40,11 +45,19 @@ Colete itens no tempo determinado, e vença o chefe final.
 
 ---
 
-## 🧪 Como Usar
+## 💻 Como Usar
 
 - Clone o repositório: git clone https://github.com/seu-usuario/nome-do-repo.git
 - Adicione a pasta no Unity Hub.
 - Abra o projeto com a versão correspondente.
+
+---
+
+## 🎮 Como jogar
+
+- Acesse o link no itch.io: [itch](https://foxjamgames.itch.io/virtual-guy-adventure)
+- Baixe o arquivo .zip
+- Extraia e execute o arquivo "Virtual Guy Adventure.exe"
 
 ---
 
